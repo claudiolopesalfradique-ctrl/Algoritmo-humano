@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algoritmo Humano — Pensando como uma IA</title>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#667085;
+  --primary:#315efb;--primary2:#eaf0ff;--border:#dce2ee;
+  --good:#177245;--goodbg:#e9f8ef;--bad:#a33a3a;--badbg:#fff0f0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+.container{max-width:980px;margin:auto;padding:22px}
+header{background:linear-gradient(135deg,#253b80,#315efb);color:white;border-radius:20px;padding:28px;margin-bottom:18px}
+h1{margin:0 0 6px;font-size:clamp(28px,5vw,42px)}
+h2,h3{margin-top:0}
+.subtitle{opacity:.92;margin:0}
+.topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:22px}
+.score{font-weight:bold;background:#ffffff22;padding:9px 13px;border-radius:10px}
+.progress{height:9px;background:#ffffff33;border-radius:99px;overflow:hidden;flex:1;min-width:220px}
+.progress div{height:100%;width:0;background:white;transition:.3s}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 3px 12px #1720330b}
+.tag{display:inline-block;background:var(--primary2);color:var(--primary);font-weight:bold;padding:5px 10px;border-radius:999px;font-size:13px}
+.mission{background:#f9fafc;border:1px solid var(--border);padding:18px;border-radius:14px;margin-top:15px}
+.options{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:14px}
+button{border:1px solid var(--border);background:white;color:var(--text);border-radius:11px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer;min-height:46px;text-align:left}
+button:hover{border-color:var(--primary)}
+button.selected{outline:3px solid #315efb44;border-color:var(--primary);background:var(--primary2)}
+button.primary{background:var(--primary);border-color:var(--primary);color:white;text-align:center}
+button.secondary{text-align:center}
+button:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.feedback{margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--border);min-height:46px}
+.feedback.good{background:var(--goodbg);color:var(--good);border-color:#bde7cd}
+.feedback.bad{background:var(--badbg);color:var(--bad);border-color:#efc2c2}
+.ai{background:#f3f5f9;border-left:5px solid var(--primary);padding:15px;border-radius:8px;margin-top:10px}
+textarea{width:100%;min-height:125px;resize:vertical;border:1px solid var(--border);border-radius:10px;padding:12px;font:inherit;color:var(--text);background:white}
+.small{color:var(--muted);font-size:14px}
+.points{font-size:20px;font-weight:bold}
+.hidden{display:none!important}
+.instructions{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.instruction{padding:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:12px}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:10px 0 25px}
+@media(max-width:600px){.container{padding:12px}.card,header{padding:17px}.options{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>🧠 Algoritmo Humano</h1>
+  <p class="subtitle">Pensando como uma IA — Ciências e Biologia</p>
+  <div class="topbar">
+    <div class="score" id="score">0 pontos</div>
+    <div class="progress" aria-label="Progresso"><div id="progress"></div></div>
+    <div id="missionNumber">Missão 1 de 10</div>
+  </div>
+</header>
+
+<section class="card" id="intro">
+  <h2>🎯 Como jogar</h2>
+  <p>Em cada missão, você deverá construir um raciocínio semelhante a um algoritmo: observar informações, tomar decisões em sequência e chegar a uma conclusão científica.</p>
+  <div class="instructions">
+    <div class="instruction"><strong>1. Algoritmo</strong><br><span class="small">Escolha a decisão que melhor inicia a investigação.</span></div>
+    <div class="instruction"><strong>2. Classificação</strong><br><span class="small">Use as evidências para chegar à resposta científica.</span></div>
+    <div class="instruction"><strong>3. IA</strong><br><span class="small">Analise uma resposta aparentemente convincente.</span></div>
+    <div class="instruction"><strong>4. Evidência</strong><br><span class="small">Explique o erro ou limitação usando ciência.</span></div>
+  </div>
+</section>
+
+<main id="game"></main>
+
+<section class="card hidden" id="result"></section>
+
+<footer>Algoritmo Humano — produção pedagógica para Ciências/Biologia</footer>
+</div>
+
+<script>
+const missions=[
+{
+ title:"🦴 Missão 1 — Zoologia",
+ prompt:"Você encontrou um animal desconhecido. Qual pergunta deve aparecer primeiro em um algoritmo para classificá-lo como vertebrado ou invertebrado?",
+ options:["Ele vive na água?","Ele possui coluna vertebral?","Ele possui pelos?","Ele consegue voar?"],
+ correct:1,
+ conclusion:"vertebrado ou invertebrado",
+ ai:"Todo animal que possui patas é um vertebrado.",
+ evidence:"A presença de patas não determina se um animal é vertebrado. O critério usado nesta classificação é a presença ou ausência de coluna vertebral."
+},
+{
+ title:"🌱 Missão 2 — Botânica e Citologia",
+ prompt:"Um organismo apresenta células eucariontes, parede celular, cloroplastos e realiza fotossíntese. Qual conclusão é mais adequada?",
+ options:["É necessariamente uma bactéria.","É um animal.","É um organismo vegetal.","É necessariamente um fungo."],
+ correct:2,
+ conclusion:"organismo vegetal",
+ ai:"Todo organismo que possui parede celular pertence ao grupo das plantas.",
+ evidence:"A parede celular não é exclusiva das plantas. Fungos e muitos procariontes também apresentam parede celular. Neste caso, cloroplastos e fotossíntese são evidências importantes para a identificação de um organismo vegetal."
+},
+{
+ title:"🦠 Missão 3 — Microbiologia",
+ prompt:"Uma amostra contém organismos unicelulares, eucariontes e heterotróficos. Qual informação é especialmente útil para diferenciá-los das bactérias?",
+ options:["Possuem material genético.","Possuem membrana plasmática.","Possuem núcleo delimitado por membrana.","Precisam de energia para sobreviver."],
+ correct:2,
+ conclusion:"organismo eucarionte",
+ ai:"Bactérias são organismos eucariontes porque possuem DNA.",
+ evidence:"Possuir DNA não torna uma célula eucarionte. Bactérias são procariontes: seu material genético não fica dentro de um núcleo delimitado por membrana."
+},
+{
+ title:"🌎 Missão 4 — Ecologia",
+ prompt:"Em uma área de mata, duas espécies diferentes utilizam o mesmo recurso alimentar e vivem no mesmo ambiente. Qual relação ecológica deve ser investigada primeiro?",
+ options:["Competição","Mutualismo obrigatório","Parasitismo","Comensalismo"],
+ correct:0,
+ conclusion:"competição",
+ ai:"Se duas espécies vivem no mesmo ambiente, obrigatoriamente existe competição entre elas.",
+ evidence:"A simples ocorrência no mesmo ambiente não prova competição. É necessário haver disputa pelo mesmo recurso, especialmente quando ele é limitado."
+},
+{
+ title:"🫁 Missão 5 — Fisiologia",
+ prompt:"Você precisa construir um algoritmo simplificado para indicar o caminho do oxigênio desde a entrada no corpo até o local onde será utilizado pelas células. Qual sequência está correta?",
+ options:["Nariz → traqueia → brônquios → pulmões → sangue → células","Nariz → estômago → sangue → pulmões → células","Nariz → esôfago → pulmões → sangue → células","Boca → estômago → pulmões → sangue → células"],
+ correct:0,
+ conclusion:"caminho do oxigênio",
+ ai:"O oxigênio chega diretamente às células pelos pulmões, sem precisar ser transportado pelo sangue.",
+ evidence:"O oxigênio inspirado chega aos alvéolos pulmonares, onde ocorre a troca gasosa. Depois, é transportado principalmente pelo sangue até os tecidos, onde pode ser utilizado pelas células."
+},
+{
+ title:"🧬 Missão 6 — Genética",
+ prompt:"Em uma espécie, o alelo A é dominante e o alelo a é recessivo. Um indivíduo Aa cruza com outro Aa. Qual resultado deve aparecer no algoritmo para os possíveis genótipos dos descendentes?",
+ options:["100% AA","50% AA e 50% aa","25% AA, 50% Aa e 25% aa","100% Aa"],
+ correct:2,
+ conclusion:"25% AA, 50% Aa e 25% aa",
+ ai:"No cruzamento Aa × Aa, todos os descendentes serão Aa porque cada progenitor fornece um alelo.",
+ evidence:"Cada progenitor heterozigoto pode produzir gametas A ou a. A combinação gera AA, Aa, Aa e aa, correspondendo a 25%, 50% e 25%."
+},
+{
+ title:"🔬 Missão 7 — Citologia",
+ prompt:"Uma célula possui uma estrutura responsável por controlar a entrada e a saída de substâncias. Qual organela ou estrutura deve ser identificada?",
+ options:["Membrana plasmática","Ribossomo","Mitocôndria","Núcleo"],
+ correct:0,
+ conclusion:"membrana plasmática",
+ ai:"A membrana plasmática controla apenas a entrada de água na célula.",
+ evidence:"A membrana plasmática participa do controle da entrada e saída de diversas substâncias, apresentando permeabilidade seletiva."
+},
+{
+ title:"🍄 Missão 8 — Fungos",
+ prompt:"Um organismo é eucarionte, heterotrófico por absorção e apresenta parede celular composta principalmente por quitina. Qual grupo deve ser identificado?",
+ options:["Animais","Fungos","Plantas","Bactérias"],
+ correct:1,
+ conclusion:"fungos",
+ ai:"Fungos são plantas porque possuem parede celular e não se locomovem.",
+ evidence:"Fungos e plantas são grupos distintos. Fungos são eucariontes heterotróficos e apresentam parede celular com quitina, enquanto as plantas são autotróficas fotossintetizantes e possuem parede celular predominantemente de celulose."
+},
+{
+ title:"🌳 Missão 9 — Meio Ambiente",
+ prompt:"Uma área apresenta redução da cobertura vegetal, aumento da erosão do solo e assoreamento de um rio após retirada intensa da vegetação. Qual fator deve ser investigado primeiro?",
+ options:["Desmatamento","Aumento da fotossíntese","Polinização","Formação de nuvens"],
+ correct:0,
+ conclusion:"desmatamento como possível causa",
+ ai:"O desmatamento sempre melhora a qualidade do solo porque deixa a área livre de árvores.",
+ evidence:"A retirada da vegetação pode reduzir a proteção do solo contra a erosão e favorecer o transporte de sedimentos para os cursos d’água, contribuindo para o assoreamento."
+},
+{
+ title:"🦠 Missão 10 — Vírus e bactérias",
+ prompt:"Um estudante afirma que antibióticos podem ser usados para combater qualquer agente causador de doença. Qual decisão científica deve aparecer no algoritmo?",
+ options:["Usar antibiótico sempre que houver febre.","Diferenciar o agente causador antes de concluir o tratamento.","Usar antibiótico contra qualquer vírus.","Considerar que vírus e bactérias são iguais."],
+ correct:1,
+ conclusion:"é necessário identificar o agente e avaliar o tratamento adequado",
+ ai:"Antibióticos são medicamentos que eliminam todos os vírus e todas as bactérias.",
+ evidence:"Antibióticos atuam contra bactérias suscetíveis e não são medicamentos para tratar infecções virais. A escolha do tratamento depende do agente causador e da avaliação adequada do caso."
+}
+];
+
+let mission=0,total=0,choice=null,aiChoice=null;
+const game=document.getElementById("game"),score=document.getElementById("score"),progress=document.getElementById("progress"),missionNumber=document.getElementById("missionNumber"),result=document.getElementById("result");
+
+function updateHeader(){
+ score.textContent=total+" pontos";
+ missionNumber.textContent=mission<missions.length?"Missão "+(mission+1)+" de "+missions.length:"Jogo concluído";
+ progress.style.width=((mission/missions.length)*100)+"%";
+}
+
+function renderMission(){
+ choice=null; aiChoice=null;
+ const m=missions[mission];
+ game.innerHTML=`
+ <section class="card">
+   <span class="tag">${m.title}</span>
+   <div class="mission">
+     <h2>🔎 Desafio científico</h2>
+     <p>${m.prompt}</p>
+     <div class="options" id="options"></div>
+   </div>
+   <div class="actions">
+     <button class="primary" id="confirm1">Confirmar decisão</button>
+   </div>
+   <div class="feedback hidden" id="feedback1" aria-live="polite"></div>
+ </section>`;
+ const options=document.getElementById("options");
+ m.options.forEach((text,i)=>{
+   const b=document.createElement("button");
+   b.textContent=text;
+   b.addEventListener("click",()=>{
+     choice=i;
+     [...options.children].forEach(x=>x.classList.remove("selected"));
+     b.classList.add("selected");
+   });
+   options.appendChild(b);
+ });
+ document.getElementById("confirm1").addEventListener("click",stage1);
+ updateHeader();
+}
+
+function stage1(){
+ const f=document.getElementById("feedback1");
+ if(choice===null){f.className="feedback bad";f.textContent="Escolha uma alternativa antes de continuar.";return;}
+ const m=missions[mission];
+ if(choice===m.correct){total+=2;f.className="feedback good";f.textContent="✅ Decisão adequada. Você construiu corretamente a primeira etapa do algoritmo. +2 pontos";}
+ else{f.className="feedback bad";f.textContent="⚠️ Essa decisão não é a melhor para iniciar o algoritmo. Analise qual característica realmente permite responder ao problema.";}
+ updateHeader();
+ document.getElementById("confirm1").disabled=true;
+ setTimeout(stage2,800);
+}
+
+function stage2(){
+ const m=missions[mission];
+ game.innerHTML=`
+ <section class="card">
+   <span class="tag">${m.title}</span>
+   <div class="mission">
+     <h2>🧬 Classificação científica</h2>
+     <p>Com base nas informações da missão, qual é a conclusão?</p>
+     <div class="ai"><strong>Resposta esperada:</strong> ${m.conclusion}</div>
+     <p class="small">Explique mentalmente quais evidências levam a essa conclusão.</p>
+   </div>
+   <div class="actions">
+     <button class="primary" id="continue2">Continuar para a etapa da IA</button>
+   </div>
+ </section>`;
+ document.getElementById("continue2").addEventListener("click",stage3);
+}
+
+function stage3(){
+ const m=missions[mission];
+ game.innerHTML=`
+ <section class="card">
+   <span class="tag">${m.title}</span>
+   <div class="mission">
+     <h2>🤖 E a IA?</h2>
+     <p>A ferramenta de IA apresentou a seguinte resposta:</p>
+     <div class="ai">“${m.ai}”</div>
+     <p><strong>Como você classifica essa resposta?</strong></p>
+     <div class="options" id="aiOptions">
+       <button data-v="correct">✅ Correta</button>
+       <button data-v="wrong">❌ Incorreta</button>
+       <button data-v="partial">🟡 Parcialmente correta</button>
+     </div>
+   </div>
+   <div class="actions"><button class="primary" id="confirm3">Analisar resposta da IA</button></div>
+   <div class="feedback hidden" id="feedback3"></div>
+ </section>`;
+ document.querySelectorAll("#aiOptions button").forEach(b=>b.addEventListener("click",()=>{
+   aiChoice=b.dataset.v;
+   document.querySelectorAll("#aiOptions button").forEach(x=>x.classList.remove("selected"));
+   b.classList.add("selected");
+ }));
+ document.getElementById("confirm3").addEventListener("click",()=>{
+   const f=document.getElementById("feedback3");
+   if(!aiChoice){f.className="feedback bad";f.textContent="Escolha uma classificação.";return;}
+   if(aiChoice==="wrong"){total+=2;f.className="feedback good";f.textContent="🎯 Correto! Você identificou que a resposta da IA contém um problema científico. +2 pontos";}
+   else{f.className="feedback bad";f.textContent="Revise a afirmação. Procure palavras como “todo”, “sempre”, “obrigatoriamente” e verifique se existem exceções.";}
+   updateHeader();
+   document.getElementById("confirm3").disabled=true;
+   setTimeout(stage4,900);
+ });
+}
+
+function stage4(){
+ const m=missions[mission];
+ game.innerHTML=`
+ <section class="card">
+   <span class="tag">${m.title}</span>
+   <div class="mission">
+     <h2>🔬 Encontre o erro da IA</h2>
+     <p><strong>Explique por que a resposta da IA está errada ou limitada.</strong></p>
+     <textarea id="reason" placeholder="Escreva seu raciocínio científico..."></textarea>
+     <p class="small"><strong>Pista científica:</strong> ${m.evidence}</p>
+   </div>
+   <div class="actions"><button class="primary" id="finish">Concluir missão</button></div>
+   <div class="feedback hidden" id="feedback4"></div>
+ </section>`;
+ document.getElementById("finish").addEventListener("click",()=>{
+   const text=document.getElementById("reason").value.trim();
+   const f=document.getElementById("feedback4");
+   if(text.length<20){f.className="feedback bad";f.textContent="Sua explicação precisa ter um pouco mais de desenvolvimento. Use a pista científica para fundamentar seu argumento.";return;}
+   total+=6;
+   f.className="feedback good";
+   f.textContent="🔬 Muito bem! Você apresentou uma justificativa científica. +6 pontos (evidência + raciocínio).";
+   updateHeader();
+   document.getElementById("finish").disabled=true;
+   setTimeout(()=>{
+     mission++;
+     if(mission<missions.length)renderMission();
+     else finishGame();
+   },1000);
+ });
+}
+
+function finishGame(){
+ progress.style.width="100%";
+ result.classList.remove("hidden");
+ let message= total>=45 ? "Excelente domínio do raciocínio algorítmico e da análise crítica." :
+             total>=30 ? "Muito bom! Você demonstrou capacidade de analisar evidências e questionar respostas." :
+             "Bom trabalho! Revise as evidências científicas e tente novamente para aperfeiçoar seu raciocínio.";
+ result.innerHTML=`
+ <h2>🏆 Jogo concluído!</h2>
+ <p class="points">Pontuação final: ${total} / 100 pontos</p>
+ <p>${message}</p>
+ <div class="mission">
+   <h3>🧠 O que você aprendeu?</h3>
+   <p>Um algoritmo é uma sequência organizada de instruções ou decisões para alcançar um resultado. Uma resposta de IA não deve ser aceita apenas porque parece convincente: é necessário verificar as evidências, identificar generalizações e comparar a informação com fontes científicas confiáveis.</p>
+ </div>
+ <div class="actions">
+   <button class="primary" id="restart">🔄 Jogar novamente</button>
+ </div>`;
+ document.getElementById("restart").addEventListener("click",()=>{
+   mission=0;total=0;result.classList.add("hidden");renderMission();
+   window.scrollTo({top:0,behavior:"smooth"});
+ });
+ updateHeader();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+renderMission();
+</script>
+</body>
+</html>
